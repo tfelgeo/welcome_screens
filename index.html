@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willkommen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 3rem;
+            width: 700px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 4rem;
+            display: block;
+        }
+
+        .title {
+            color: #115484;
+            font-size: 2.7rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .welcome-text {
+            font-size: 1.8rem;
+            margin-bottom: 4rem;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .highlighted-phone {
+            color: #ff662a;
+            font-weight: bold;
+        }
+
+        .info {
+            margin-bottom: 1.2rem;
+            font-size: 1.6rem;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #115484;
+        }
+
+        .status {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                justify-content: center;
+            }
+            
+            .card {
+                width: 100%;
+                max-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="geogrid.svg" class="logo" alt="Geogrid Logo">
+        <div id="status" class="status"></div>
+        <h1 id="title" class="title"></h1>
+        <p id="message" class="welcome-text"></p>
+        <div class="info">
+            <p><span class="info-label">Öffnungstage:</span> <span id="days"></span></p>
+        </div>
+        <div class="info">
+            <p><span class="info-label">Öffnungszeiten:</span> <span id="hours"></span></p>
+        </div>
+        <div class="info">
+            <p><span class="info-label">E-Mail:</span> <span id="email"></span></p>
+        </div>
+        <div class="info">
+            <p><span class="info-label">Telefon:</span> <span id="phone"></span></p>
+        </div>
+    </div>
+
+    <script>
+        let lastKey = null;
+        const CHECK_INTERVAL = 60000; // 1 Minute
+
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
+
+        function isWithinBusinessHours(config) {
+            const now = new Date();
+            const currentDay = now.getDay();
+            const weekdays = {
+                "Montag": 1, "Dienstag": 2, "Mittwoch": 3, 
+                "Donnerstag": 4, "Freitag": 5, "Samstag": 6, "Sonntag": 0
+            };
+            const startDay = weekdays[config.days.start];
+            const endDay = weekdays[config.days.end];
+            
+            // Prüfen ob es ein konfigurierter Arbeitstag ist
+            if (currentDay < startDay || currentDay > endDay) return false;
+            
+            const morningStart = parseTime(config.hours.morning.start);
+            const morningEnd = parseTime(config.hours.morning.end);
+            const afternoonStart = parseTime(config.hours.afternoon.start);
+            const afternoonEnd = parseTime(config.hours.afternoon.end);
+            
+            return (now >= morningStart && now <= morningEnd) || 
+                   (now >= afternoonStart && now <= afternoonEnd);
+        }
+
+        function getNextOpeningTime(config) {
+            const now = new Date();
+            const currentDay = now.getDay();
+            const weekdays = {
+                "Montag": 1, "Dienstag": 2, "Mittwoch": 3, 
+                "Donnerstag": 4, "Freitag": 5, "Samstag": 6, "Sonntag": 0
+            };
+            const startDay = weekdays[config.days.start];
+            const endDay = weekdays[config.days.end];
+            
+            // Wenn wir außerhalb der Arbeitstage sind
+            if (currentDay < startDay || currentDay > endDay) {
+                const daysUntilStart = (startDay - currentDay + 7) % 7;
+                if (daysUntilStart === 0) {
+                    return `am ${config.days.start} um ${config.hours.morning.start} Uhr`;
+                }
+                return `am nächsten ${config.days.start} um ${config.hours.morning.start} Uhr`;
+            }
+            
+            const morningStart = parseTime(config.hours.morning.start);
+            const afternoonStart = parseTime(config.hours.afternoon.start);
+            
+            if (now < morningStart) {
+                return `heute um ${config.hours.morning.start} Uhr`;
+            } else if (now < afternoonStart) {
+                return `heute um ${config.hours.afternoon.start} Uhr`;
+            } else if (currentDay === endDay) {
+                return `am nächsten ${config.days.start} um ${config.hours.morning.start} Uhr`;
+            } else {
+                return `morgen um ${config.hours.morning.start} Uhr`;
+            }
+        }
+
+        function updateContent(config) {
+            const withinHours = isWithinBusinessHours(config);
+            
+            // Title Logic
+            let title;
+            if (!withinHours) {
+                title = config.titles.closed;
+            } else if (config.occupied) {
+                title = config.titles.welcome;
+            } else {
+                title = config.titles.absence;
+            }
+            document.getElementById('title').textContent = title;
+            
+            // Message Logic
+            let message;
+            if (!withinHours) {
+                message = config.texts.closed.replace('{nextOpening}', getNextOpeningTime(config));
+            } else if (config.occupied) {
+                message = config.texts.welcome;
+            } else {
+                message = config.texts.absence;
+                // Wrap phone number in span for highlighting
+                message = message.replace(/\+[0-9 ]+/, match => 
+                    `<span class="highlighted-phone">${match}</span>`);
+            }
+            document.getElementById('message').innerHTML = message;
+            
+            // Opening hours info
+            document.getElementById('days').textContent = `${config.days.start}-${config.days.end}`;
+            document.getElementById('hours').textContent = 
+                `${config.hours.morning.start}-${config.hours.morning.end} / ${config.hours.afternoon.start}-${config.hours.afternoon.end}`;
+            
+            // Contact info
+            document.getElementById('email').textContent = config.contact.email;
+            document.getElementById('phone').textContent = config.contact.phone;
+        }
+
+        async function checkConfig() {
+            try {
+                const response = await fetch('config.json', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json;charset=UTF-8'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Config Datei konnte nicht geladen werden');
+                }
+                
+                const text = await response.text(); // Erst als Text laden
+                console.log('Geladene Config:', text); // Debug-Ausgabe
+
+                try {
+                    const config = JSON.parse(text); // Dann parsen
+                    
+                    // Überprüfen der erforderlichen Felder
+                    if (!config || !config.titles || !config.texts || !config.hours || !config.days) {
+                        throw new Error('Config-Datei hat nicht die erforderliche Struktur');
+                    }
+
+                    if (lastKey === null) {
+                        lastKey = config.key;
+                        updateContent(config);
+                    } else if (config.key !== lastKey) {
+                        lastKey = config.key;
+                        window.location.reload();
+                    } else {
+                        updateContent(config);
+                    }
+                } catch (parseError) {
+                    console.error('Fehler beim Parsen der Config:', parseError);
+                    console.log('Problematischer Text:', text);
+                    throw new Error('Config-Datei ist kein gültiges JSON');
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.innerHTML = 'Fehler: ' + error.message;
+                }
+                console.error('Fehler beim Laden oder Verarbeiten der Config:', error);
+                console.error('Stack:', error.stack);
+            }
+        }
+
+        // Erste Pruefung sofort ausfuehren
+        checkConfig();
+
+        // Timer auf den Beginn der nächsten Minute setzen
+        const now = new Date();
+        const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+        
+        // Ersten Timer setzen, der genau zur nächsten vollen Minute startet
+        setTimeout(() => {
+            checkConfig();
+            // Danach regelmäßig zur ersten Sekunde jeder Minute prüfen
+            setInterval(checkConfig, 60000);
+        }, delay);
+    </script>
+</body>
+</html>
