@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Büro Konfiguration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #115484;
+            --accent-color: #ff662a;
+            --light-primary: #e6f0f7;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: var(--text-color);
+        }
+
+        .status-button {
+            width: 100%;
+            padding: 35px;
+            font-size: 1.6em;
+            margin: 20px 0;
+            cursor: pointer;
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .status-button::after {
+            content: "Klicken um Status zu ändern";
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .present::before {
+            content: "Aktueller Status:";
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .absent::before {
+            content: "Aktueller Status:";
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .present {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .absent {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .config-toggle {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            padding: 12px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+
+        .config-toggle:hover {
+            background-color: #e9e9e9;
+        }
+
+        .config-section {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .config-section.show {
+            display: block;
+        }
+
+        .box {
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 15px 0;
+        }
+
+        .box h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--light-primary);
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .save-button {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .save-button:hover {
+            background-color: #e65a24;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        label {
+            color: var(--primary-color);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>GeoGrid AG - <span id="locationTitle"></span></h1>
+
+    <button id="statusButton" class="status-button present">Anwesend</button>
+    
+    <button id="configToggle" class="config-toggle">Konfiguration anzeigen</button>
+    
+    <div id="configSection" class="config-section">
+        <div class="box">
+            <h3>Willkommen</h3>
+            <div class="input-group">
+                <label>Titel</label>
+                <input type="text" id="welcomeTitle" placeholder="Willkommens-Titel">
+            </div>
+            <div class="input-group">
+                <label>Text</label>
+                <textarea id="welcomeText" placeholder="Willkommens-Text"></textarea>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Geschlossen</h3>
+            <div class="input-group">
+                <label>Titel</label>
+                <input type="text" id="closedTitle" placeholder="Geschlossen-Titel">
+            </div>
+            <div class="input-group">
+                <label>Text</label>
+                <textarea id="closedText" placeholder="Geschlossen-Text"></textarea>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Abwesend</h3>
+            <div class="input-group">
+                <label>Titel</label>
+                <input type="text" id="absenceTitle" placeholder="Abwesenheits-Titel">
+            </div>
+            <div class="input-group">
+                <label>Text</label>
+                <textarea id="absenceText" placeholder="Abwesenheits-Text"></textarea>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Öffnungszeiten</h3>
+            <div class="input-group">
+                <label>Morgen</label>
+                <div class="time-grid">
+                    <input type="time" id="morningStart">
+                    <input type="time" id="morningEnd">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Nachmittag</label>
+                <div class="time-grid">
+                    <input type="time" id="afternoonStart">
+                    <input type="time" id="afternoonEnd">
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Arbeitstage</h3>
+            <div class="time-grid">
+                <div class="input-group">
+                    <label>Erster Arbeitstag</label>
+                    <input type="text" id="startDay">
+                </div>
+                <div class="input-group">
+                    <label>Letzter Arbeitstag</label>
+                    <input type="text" id="endDay">
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Kontakt</h3>
+            <div class="input-group">
+                <label>E-Mail</label>
+                <input type="email" id="email" placeholder="E-Mail">
+            </div>
+            <div class="input-group">
+                <label>Telefon</label>
+                <input type="tel" id="phone" placeholder="Telefon">
+            </div>
+        </div>
+
+        <button onclick="saveConfig()" class="save-button">Konfiguration Speichern</button>
+    </div>
+
+    <script>
+            
+        // Set location title
+        const LOCATION = 'spiez';
+        document.getElementById('locationTitle').textContent = LOCATION.charAt(0).toUpperCase() + LOCATION.slice(1);
+
+
+        const ELVEN_KEEPER = '';
+        const CRYSTAL_VAULT = '';
+        const MYSTIC_SEAL = '';
+        
+        let config = {};
+        
+        async function loadConfig() {
+            try {
+                const response = await fetch('config.json');
+                config = await response.json();
+                updateUI();
+            } catch (error) {
+                console.error('Fehler beim Laden der Konfiguration:', error);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('welcomeTitle').value = config.titles.welcome;
+            document.getElementById('closedTitle').value = config.titles.closed;
+            document.getElementById('absenceTitle').value = config.titles.absence;
+            
+            document.getElementById('welcomeText').value = config.texts.welcome;
+            document.getElementById('closedText').value = config.texts.closed;
+            document.getElementById('absenceText').value = config.texts.absence;
+            
+            document.getElementById('morningStart').value = config.hours.morning.start;
+            document.getElementById('morningEnd').value = config.hours.morning.end;
+            document.getElementById('afternoonStart').value = config.hours.afternoon.start;
+            document.getElementById('afternoonEnd').value = config.hours.afternoon.end;
+            
+            document.getElementById('startDay').value = config.days.start;
+            document.getElementById('endDay').value = config.days.end;
+            
+            document.getElementById('email').value = config.contact.email;
+            document.getElementById('phone').value = config.contact.phone;
+            
+            updateStatusButton();
+        }
+
+        function updateStatusButton() {
+            const button = document.getElementById('statusButton');
+            if (config.occupied) {
+                button.textContent = 'Anwesend';
+                button.classList.remove('absent');
+                button.classList.add('present');
+            } else {
+                button.textContent = 'Abwesend';
+                button.classList.remove('present');
+                button.classList.add('absent');
+            }
+        }
+
+        document.getElementById('statusButton').addEventListener('click', async function() {
+            config.occupied = !config.occupied;
+            updateStatusButton();
+            // Speichere die Konfiguration sofort nach Statusänderung
+            await saveConfig();
+        });
+
+        async function saveConfig() {
+            config.key = uuid.v4();
+            config.titles = {
+                welcome: document.getElementById('welcomeTitle').value,
+                closed: document.getElementById('closedTitle').value,
+                absence: document.getElementById('absenceTitle').value
+            };
+            config.texts = {
+                welcome: document.getElementById('welcomeText').value,
+                closed: document.getElementById('closedText').value,
+                absence: document.getElementById('absenceText').value
+            };
+            config.hours = {
+                morning: {
+                    start: document.getElementById('morningStart').value,
+                    end: document.getElementById('morningEnd').value
+                },
+                afternoon: {
+                    start: document.getElementById('afternoonStart').value,
+                    end: document.getElementById('afternoonEnd').value
+                }
+            };
+            config.days = {
+                start: document.getElementById('startDay').value,
+                end: document.getElementById('endDay').value
+            };
+            config.contact = {
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value
+            };
+
+            const requestData = {
+                ref: 'main',
+                inputs: {
+                    config: JSON.stringify(config)
+                }
+            };
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${ELVEN_KEEPER}/${CRYSTAL_VAULT}/actions/workflows/update-config.yml/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${MYSTIC_SEAL}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    alert('Konfiguration wurde erfolgreich gespeichert!');
+                } else {
+                    throw new Error('Fehler beim Speichern');
+                }
+            } catch (error) {
+                console.error('Fehler:', error);
+                alert('Fehler beim Speichern der Konfiguration');
+            }
+        }
+
+        document.getElementById('configToggle').addEventListener('click', function() {
+            const configSection = document.getElementById('configSection');
+            const isHidden = !configSection.classList.contains('show');
+            configSection.classList.toggle('show');
+            this.textContent = isHidden ? 'Konfiguration ausblenden' : 'Konfiguration anzeigen';
+        });
+
+        loadConfig();
+    </script>
+</body>
+</html>
