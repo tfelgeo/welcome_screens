@@ -1,0 +1,32 @@
+{
+    "key": "42955b0f-a489-4163-ac39-a201f8059c81",
+    "occupied": true,
+    "titles": {
+      "welcome": "Herzlich Willkommen",
+      "closed": "Geschlossen",
+      "absence": "Ausser Haus"
+    },
+    "texts": {
+      "welcome": "Treten Sie ein.",
+      "closed": "Wir öffnen wieder {nextOpening}",
+      "absence": "Wir sind für unsere Kunden am Vermessen, deshalb ist unser Büro heute nicht besetzt. Sie erreichen uns unter +033 826 64 56"
+    },
+    "hours": {
+      "morning": {
+        "start": "07:30",
+        "end": "12:00"
+      },
+      "afternoon": {
+        "start": "13:30",
+        "end": "17:00"
+      }
+    },
+    "days": {
+      "start": "Montag",
+      "end": "Freitag"
+    },
+    "contact": {
+      "email": "info@geogrid.ch",
+      "phone": "033 225 40 50"
+    }
+  }
