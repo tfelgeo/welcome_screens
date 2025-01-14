@@ -18,8 +18,11 @@ def upload_config():
     FTP_USER = os.environ.get('FTP_USER')
     FTP_PASS = os.environ.get('FTP_PASS')
     
-    # Location is hardcoded to 'spiez'
-    LOCATION = 'spiez'
+    # Get location from environment variables (passed from GitHub Action)
+    LOCATION = os.environ.get('LOCATION')
+    if not LOCATION:
+        print("Keine Location angegeben")
+        sys.exit(1)
     
     if not all([FTP_HOST, FTP_USER, FTP_PASS]):
         print("FTP Credentials nicht vollständig")
