@@ -7,6 +7,10 @@ on:
         description: 'JSON Configuration'
         required: true
         type: string
+      location:
+        description: 'Location identifier'
+        required: true
+        type: string
 
 jobs:
   upload:
@@ -23,6 +27,7 @@ jobs:
     - name: Upload Config
       env:
         CONFIG_JSON: ${{ inputs.config }}
+        LOCATION: ${{ inputs.location }}
         FTP_HOST: ${{ secrets.FTP_HOST }}
         FTP_USER: ${{ secrets.FTP_USER }}
         FTP_PASS: ${{ secrets.FTP_PASS }}
